@@ -62,34 +62,45 @@ button:focus-visible{outline:3px solid var(--red);outline-offset:2px}
 <label for="why">কেন যোগ দিতে চান? (ঐচ্ছিক)</label>
 <textarea id="why" rows="3"></textarea>
 <div class="btns">
-<button type="button" class="wa" id="wa">ইমেইলে পাঠান</button>
-<button type="button" class="cp" id="cp">তথ্য কপি করুন</button>
+<button type="button" class="wa" id="sub">জমা দিন</button>
+<button type="button" class="cp" id="wa">ইমেইলে পাঠান (বিকল্প)</button>
 </div>
 <div class="msg" id="msg" role="status"></div>
-<div class="note">আপনার তথ্য শুধু আপনার পাঠানো ইমেইলে যাবে, এই পাতায় জমা থাকে না।</div>
+<div class="note">আপনার তথ্য বরমচাল ইউনিয়ন এনসিপির সংগঠকদের কাছে জমা হবে।</div>
 </form>
 </div>
 <script>
 var ORGANIZER_EMAIL = "baramchalunion.ncp@gmail.com";
+var SHEET_URL = "https://script.google.com/macros/s/AKfycbwykib5MFiA-3DSqgmKq1LhRnzwmm_waiyiEgB6juca_7vbBfPassmyS1nli2Nb76A/exec";
 function $(i){return document.getElementById(i)}
-function build(){
+function val(){
   var n=$("name").value.trim(),p=$("phone").value.trim(),a=$("addr").value.trim();
-  if(!n||!p||!a||!document.querySelector("#help input:checked")){$("msg").textContent="নাম, মোবাইল নম্বর, ঠিকানা ও উইং বাছাই আবশ্যক।";return null}
+  var w=document.querySelector("#help input:checked");
+  if(!n||!p||!a||!w){$("msg").textContent="নাম, মোবাইল নম্বর, ঠিকানা ও উইং বাছাই আবশ্যক।";return null}
   $("msg").textContent="";
-  var w=document.querySelector("#help input:checked");var h=w?w.value:"";
-  return "বরমচাল ইউনিয়ন এনসিপি – যোগদান\n"+
-   "নাম: "+n+"\nমোবাইল: "+p+"\nবয়স: "+$("age").value+"\nঠিকানা: "+a+
-   "\nপেশা: "+$("job").value+"\nশিক্ষাপ্রতিষ্ঠান: "+$("edu").value+
-   "\nউইং: "+h+"\nফেসবুক: "+$("fb").value+"\nকারণ: "+$("why").value;
+  return {name:n,phone:p,age:$("age").value,addr:a,job:$("job").value,edu:$("edu").value,wing:w.value,fb:$("fb").value,why:$("why").value};
 }
-$("wa").onclick=function(){
-  var t=build(); if(!t) return;
-  window.location.href="mailto:"+ORGANIZER_EMAIL+"?subject="+encodeURIComponent("যোগদান – "+$("name").value.trim())+"&body="+encodeURIComponent(t);
+$("sub").onclick=function(){
+  var d=val(); if(!d) return;
+  var btn=$("sub"); btn.disabled=true; btn.textContent="জমা হচ্ছে...";
+  var body=new URLSearchParams(d).toString();
+  fetch(SHEET_URL,{method:"POST",mode:"no-cors",headers:{"Content-Type":"application/x-www-form-urlencoded"},body:body})
+  .then(function(){
+    $("msg").style.color="#0e5a3a";
+    $("msg").textContent="ধন্যবাদ! আপনার তথ্য জমা হয়েছে। আমরা শীঘ্রই যোগাযোগ করব।";
+    $("f").reset(); btn.textContent="জমা হয়েছে";
+    setTimeout(function(){btn.disabled=false;btn.textContent="জমা দিন"},4000);
+  })
+  .catch(function(){
+    $("msg").style.color="#c0282a";
+    $("msg").textContent="জমা হয়নি। ইন্টারনেট দেখে আবার চেষ্টা করুন বা ইমেইলে পাঠান।";
+    btn.disabled=false; btn.textContent="জমা দিন";
+  });
 };
-$("cp").onclick=function(){
-  var t=build(); if(!t) return;
-  try{navigator.clipboard.writeText(t).then(function(){$("msg").textContent="তথ্য কপি হয়েছে।"},function(){$("msg").textContent="কপি করা যায়নি, ইমেইলে পাঠান।"})}
-  catch(e){$("msg").textContent="কপি করা যায়নি, ইমেইলে পাঠান।"}
+$("wa").onclick=function(){
+  var d=val(); if(!d) return;
+  var t="বরমচাল ইউনিয়ন এনসিপি – যোগদান\nনাম: "+d.name+"\nমোবাইল: "+d.phone+"\nবয়স: "+d.age+"\nঠিকানা: "+d.addr+"\nপেশা: "+d.job+"\nশিক্ষাপ্রতিষ্ঠান: "+d.edu+"\nউইং: "+d.wing+"\nফেসবুক: "+d.fb+"\nকারণ: "+d.why;
+  window.location.href="mailto:"+ORGANIZER_EMAIL+"?subject="+encodeURIComponent("যোগদান – "+d.name)+"&body="+encodeURIComponent(t);
 };
 </script>
 </body>
